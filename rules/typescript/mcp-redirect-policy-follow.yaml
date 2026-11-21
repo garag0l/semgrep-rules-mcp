@@ -1,0 +1,20 @@
+rules:
+  - id: mcp-redirect-policy-follow
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      `redirectPolicy: 'follow'` re-enables cross-origin redirects in MCP client transports: custom headers
+      (API keys), the mcp-session-id and, on 307/308, request bodies including OAuth token requests are re-sent
+      to the redirect target. Remove it and configure the final URL.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      cwe: ["CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"]
+      references:
+        - https://github.com/advisories/GHSA-6prh-2h8m-c8cw
+      technology: [mcp]
+    pattern-either:
+      - pattern: '{..., redirectPolicy: "follow", ...}'

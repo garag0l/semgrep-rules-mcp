@@ -1,0 +1,52 @@
+rules:
+  - id: mcp-tool-input-to-shell
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      MCP tool arguments (chosen by the model, so by anyone who can put text in front of it) reach a shell
+      command. Use execFile/spawn with an argument array and no shell, and validate the input against an allowlist.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: HIGH
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"]
+      owasp: ["LLM06:2025 - Excessive Agency"]
+      references:
+        - https://modelcontextprotocol.io/specification/draft/basic/security_best_practices
+      technology: [mcp]
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: $SERVER.tool(..., async ($P, ...) => {...})
+              - pattern-inside: $SERVER.tool(..., ($P, ...) => {...})
+              - pattern-inside: $SERVER.tool(..., async function ($P, ...) {...})
+              - pattern-inside: $SERVER.registerTool(..., async ($P, ...) => {...})
+              - pattern-inside: $SERVER.registerTool(..., ($P, ...) => {...})
+              - pattern-inside: $SERVER.registerTool(..., async function ($P, ...) {...})
+              - pattern-inside: $SERVER.setRequestHandler(CallToolRequestSchema, async ($P, ...) => {...})
+              - pattern-inside: $SERVER.setRequestHandler(CallToolRequestSchema, ($P, ...) => {...})
+          - pattern: $P
+      - patterns:
+          - pattern-either:
+              - pattern-inside: "$SERVER.tool(..., async ({..., $P, ...}) => {...})"
+              - pattern-inside: "$SERVER.tool(..., ({..., $P, ...}) => {...})"
+              - pattern-inside: "$SERVER.registerTool(..., async ({..., $P, ...}) => {...})"
+              - pattern-inside: "$SERVER.registerTool(..., ({..., $P, ...}) => {...})"
+          - pattern: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: exec($CMD, ...)
+              - pattern: execSync($CMD, ...)
+              - pattern: $CP.exec($CMD, ...)
+              - pattern: $CP.execSync($CMD, ...)
+              - pattern: "spawn($CMD, ..., {..., shell: true, ...})"
+              - pattern: "spawnSync($CMD, ..., {..., shell: true, ...})"
+              - pattern: "$CP.spawn($CMD, ..., {..., shell: true, ...})"
+              - pattern: "execa($CMD, ..., {..., shell: true, ...})"
+              - pattern: execaCommand($CMD, ...)
+              - pattern: $$.$X`...`
+          - focus-metavariable: $CMD

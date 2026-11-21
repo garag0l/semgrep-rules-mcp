@@ -1,0 +1,68 @@
+rules:
+  - id: mcp-shared-server-instance
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      `$S` is one McpServer/Server created at module scope but connect()ed inside a request handler, so every
+      client shares it. Server-to-client messages sent while handling a request can go to another client's
+      transport. Build a new server per request/session (or pass a factory to createMcpHandler()). Patched SDKs
+      throw ALREADY_CONNECTED on the second connect().
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: HIGH
+      cwe: ["CWE-488: Exposure of Data Element to Wrong Session"]
+      references:
+        - https://github.com/advisories/GHSA-345p-7cg4-v4c7
+        - https://github.com/advisories/GHSA-jm63-cq47-j5jp
+      technology: [mcp]
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              const $S = new $CLS(...);
+              ...
+          - pattern-inside: |
+              let $S = new $CLS(...);
+              ...
+          - pattern-inside: |
+              var $S = new $CLS(...);
+              ...
+          - pattern-inside: |
+              export const $S = new $CLS(...);
+              ...
+      - metavariable-regex:
+          metavariable: $CLS
+          regex: ^(McpServer|Server)$
+      # created per request/session inside the handler (correct pattern): not shared
+      - pattern-not-inside: |
+          (...) => {
+            ...
+            const $S = new $CLS(...);
+            ...
+          }
+      - pattern-not-inside: |
+          function (...) {
+            ...
+            const $S = new $CLS(...);
+            ...
+          }
+      - pattern-not-inside: |
+          function $FN(...) {
+            ...
+            const $S = new $CLS(...);
+            ...
+          }
+      - pattern-either:
+          - pattern-inside: $APP.$METHOD($PATH, ..., ($REQ, $RES, ...) => {...})
+          - pattern-inside: $APP.$METHOD($PATH, ..., function ($REQ, $RES, ...) {...})
+          - pattern-inside: createServer(($REQ, $RES) => {...})
+          - pattern-inside: "{ fetch($REQ, ...) {...} }"
+      - pattern-either:
+          - pattern: $S.connect($TR)
+          - pattern: $S.server.connect($TR)
+      - metavariable-pattern:
+          metavariable: $TR
+          patterns:
+            - pattern-not-regex: (?i)stdio|inmemory|linkedpair

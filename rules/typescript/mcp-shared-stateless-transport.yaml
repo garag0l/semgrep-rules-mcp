@@ -1,0 +1,38 @@
+rules:
+  - id: mcp-shared-stateless-transport
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A stateless MCP HTTP transport created once at module scope is shared by every client. JSON-RPC ids
+      collide across clients, so one client's responses and notifications can reach another. Create the
+      transport inside the request handler (stateless) or set `sessionIdGenerator` (one transport per session).
+      Patched SDKs reject this pattern at runtime, so it also breaks upgrades.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: HIGH
+      cwe: ["CWE-488: Exposure of Data Element to Wrong Session"]
+      references:
+        - https://github.com/advisories/GHSA-345p-7cg4-v4c7
+        - https://github.com/advisories/GHSA-jm63-cq47-j5jp
+      technology: [mcp]
+    patterns:
+      - pattern-either:
+          - pattern: "new $T({..., sessionIdGenerator: undefined, ...})"
+          - pattern: new $T()
+          - patterns:
+              - pattern: new $T({...})
+              - pattern-not: new $T({..., ...$S, ...})
+      # any sessionIdGenerator other than `undefined` (function, arrow, identifier, shorthand) = stateful
+      - pattern-not-regex: 'sessionIdGenerator(?!\s*:\s*undefined\b)'
+      - metavariable-regex:
+          metavariable: $T
+          regex: ^(StreamableHTTPServerTransport|NodeStreamableHTTPServerTransport|WebStandardStreamableHTTPServerTransport)$
+      - pattern-not-inside: function $F(...) {...}
+      - pattern-not-inside: function (...) {...}
+      - pattern-not-inside: (...) => {...}
+      - pattern-not-inside: (...) => $E
+      - pattern-not-inside: "class $C {...}"
+      - pattern-not-inside: "{ $K(...) {...} }"

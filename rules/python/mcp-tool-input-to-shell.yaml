@@ -1,0 +1,49 @@
+rules:
+  - id: mcp-py-tool-input-to-shell
+    languages: [python]
+    severity: ERROR
+    message: >-
+      MCP tool arguments (chosen by the model, so by anyone who can put text in front of it) reach a shell or
+      eval. Use subprocess with an argument list and shell=False, and validate the input against an allowlist.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: HIGH
+      cwe: ["CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"]
+      owasp: ["LLM06:2025 - Excessive Agency"]
+      references:
+        - https://modelcontextprotocol.io/specification/draft/basic/security_best_practices
+      technology: [mcp]
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$M.tool(...)
+                  def $F(..., $P, ...):
+                      ...
+              - pattern-inside: |
+                  @$M.tool(...)
+                  async def $F(..., $P, ...):
+                      ...
+              - pattern-inside: |
+                  @$M.tool
+                  def $F(..., $P, ...):
+                      ...
+              - pattern-inside: |
+                  @$M.tool
+                  async def $F(..., $P, ...):
+                      ...
+          - pattern: $P
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: os.system($CMD)
+              - pattern: os.popen($CMD, ...)
+              - pattern: subprocess.$FN($CMD, ..., shell=True, ...)
+              - pattern: asyncio.create_subprocess_shell($CMD, ...)
+              - pattern: eval($CMD, ...)
+              - pattern: exec($CMD, ...)
+          - focus-metavariable: $CMD

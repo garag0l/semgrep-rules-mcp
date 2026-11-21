@@ -1,0 +1,28 @@
+rules:
+  - id: mcp-py-transport-missing-security-settings
+    languages: [python]
+    severity: INFO
+    message: >-
+      Low-level MCP HTTP/SSE/WebSocket server transport without `security_settings`: no Host/Origin validation,
+      so a malicious web page can reach the server through DNS rebinding if it runs on localhost without auth.
+      Pass `security_settings=TransportSecuritySettings(...)` (websocket_server needs mcp >= 1.28.1) or require
+      authentication.
+    metadata:
+      category: security
+      subcategory: [audit]
+      confidence: LOW
+      likelihood: LOW
+      impact: HIGH
+      cwe: ["CWE-350: Reliance on Reverse DNS Resolution for a Security-Critical Action"]
+      references:
+        - https://github.com/advisories/GHSA-9h52-p55h-vw2f
+        - https://github.com/advisories/GHSA-vj7q-gjh5-988w
+      technology: [mcp]
+    patterns:
+      - pattern: $T(...)
+      - metavariable-regex:
+          metavariable: $T
+          regex: ^(.*\.)?(StreamableHTTPSessionManager|SseServerTransport|websocket_server)$
+      - pattern-not: $T(..., security_settings=$S, ...)
+      - pattern-not: $T($A, $S)
+      - pattern-not: $T(..., **$KW, ...)

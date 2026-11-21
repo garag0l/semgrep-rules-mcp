@@ -1,0 +1,27 @@
+rules:
+  - id: mcp-py-auth-settings-missing-resource-validation
+    languages: [python]
+    severity: WARNING
+    message: >-
+      AuthSettings without `validate_token_resource` doesn't check the token audience, so access tokens issued
+      for other services by the same authorization server are accepted. Upgrading alone changes nothing: set
+      `validate_token_resource=True` (with `resource_server_url`) and return `AccessToken.resource` from
+      verify_token(), or set it to False explicitly if your TokenVerifier already checks `aud`.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      cwe: ["CWE-863: Incorrect Authorization"]
+      references:
+        - https://github.com/advisories/GHSA-w4fh-qvv9-3v23
+      technology: [mcp, oauth]
+    patterns:
+      - pattern-either:
+          - pattern: AuthSettings(...)
+          - pattern: $M.AuthSettings(...)
+      - pattern-not: AuthSettings(..., validate_token_resource=$V, ...)
+      - pattern-not: $M.AuthSettings(..., validate_token_resource=$V, ...)
+      - pattern-not: AuthSettings(..., **$KW, ...)
+      - pattern-not: $M.AuthSettings(..., **$KW, ...)

@@ -1,0 +1,29 @@
+rules:
+  - id: mcp-bearer-auth-missing-expected-resource
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      Bearer auth without `expectedResource` accepts access tokens issued for other services by the same
+      authorization server (token audience is not checked). Upgrading alone changes nothing: pass
+      `expectedResource: new URL('<your MCP URL>')` and return `AuthInfo.resource` from verifyAccessToken(),
+      or check `aud` inside verifyAccessToken() yourself.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      cwe: ["CWE-863: Incorrect Authorization"]
+      references:
+        - https://github.com/advisories/GHSA-rvq5-wwqv-78pq
+      technology: [mcp, oauth]
+    patterns:
+      - pattern-either:
+          - pattern: requireBearerAuth({...})
+          - pattern: verifyBearerToken($TOKEN, {...})
+      - pattern-not: "requireBearerAuth({..., expectedResource: $R, ...})"
+      - pattern-not: requireBearerAuth({..., expectedResource, ...})
+      - pattern-not: "verifyBearerToken($TOKEN, {..., expectedResource: $R, ...})"
+      - pattern-not: verifyBearerToken($TOKEN, {..., expectedResource, ...})
+      - pattern-not: requireBearerAuth({..., ...$SPREAD, ...})
+      - pattern-not: verifyBearerToken($TOKEN, {..., ...$SPREAD, ...})

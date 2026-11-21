@@ -1,0 +1,25 @@
+rules:
+  - id: mcp-py-oauth-provider-missing-issuer
+    languages: [python]
+    severity: ERROR
+    message: >-
+      $P is created without `issuer=`. Even on patched SDKs (mcp >= 1.30.0 / >= 2.2.0) it follows whichever
+      authorization server the MCP server advertises, sending your client secret or signed JWT assertion there.
+      Pass `issuer="https://<your-auth-server>"`.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      cwe: ["CWE-522: Insufficiently Protected Credentials"]
+      references:
+        - https://github.com/advisories/GHSA-qx49-fqc8-xw99
+      technology: [mcp, oauth]
+    patterns:
+      - pattern: $P(...)
+      - metavariable-regex:
+          metavariable: $P
+          regex: ^(.*\.)?(ClientCredentialsOAuthProvider|PrivateKeyJWTOAuthProvider|RFC7523OAuthClientProvider)$
+      - pattern-not: $P(..., issuer=$I, ...)
+      - pattern-not: $P(..., **$KW, ...)

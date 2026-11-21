@@ -1,0 +1,32 @@
+rules:
+  - id: mcp-tool-description-injection
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      This MCP tool's description contains text aimed at the model rather than the user (hidden-instruction
+      markers, requests for secrets or config files, or "don't tell the user"). Tool descriptions are sent
+      straight into the agent's context, so this is the tool-poisoning pattern. Review the text before
+      installing or publishing this server.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      cwe: ["CWE-1427: Improper Neutralization of Input Used for LLM Prompting"]
+      owasp: ["LLM01:2025 - Prompt Injection"]
+      references:
+        - https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/
+        - https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks
+      technology: [mcp]
+    patterns:
+      - pattern-either:
+          - pattern: $SERVER.tool($NAME, $DESC, ...)
+          - pattern: "$SERVER.registerTool($NAME, {..., description: $DESC, ...}, ...)"
+          - pattern: "$SERVER.registerTool($NAME, {..., title: $DESC, ...}, ...)"
+          - pattern: $SCHEMA.describe($DESC)
+      - focus-metavariable: $DESC
+      - metavariable-regex:
+          metavariable: $DESC
+          regex: >-
+            (?is)^.*?(<\s*/?\s*(important|system|instructions?|secret|hidden)\s*>|ignore\s+(all\s+|any\s+)?(previous|prior|above|other)\s+(instructions|rules)|do\s+not\s+(tell|inform|mention|reveal|show)[^.\n]{0,40}\buser|without\s+(telling|informing|asking|notifying)\s+the\s+user|(~|\$HOME|%USERPROFILE%)[\/]\.(ssh|aws|kube|config|gnupg)|\bid_(rsa|ed25519)\b|\.env\b|mcp\.json|claude_desktop_config|credentials\.json|before\s+using\s+this\s+tool[^.\n]{0,80}\b(read|call|send|pass|include)\b|\b(send|forward|upload|exfiltrate)\s+(it|them|this|the\s+(contents?|file|data|results?))[^.\n]{0,40}\b(to|via)\s+(https?://|the\s+following))

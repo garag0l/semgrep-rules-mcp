@@ -1,0 +1,26 @@
+rules:
+  - id: mcp-oauth-provider-missing-expected-issuer
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      $P is created without `expectedIssuer`. Even on patched SDKs (@modelcontextprotocol/sdk >= 1.31.0,
+      @modelcontextprotocol/client >= 2.2.0) it still sends the client secret / signed assertion to whichever
+      authorization server the MCP server names. Pass `expectedIssuer: 'https://<your-auth-server>'`.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      cwe: ["CWE-522: Insufficiently Protected Credentials"]
+      references:
+        - https://github.com/advisories/GHSA-6qxp-vccf-f47h
+      technology: [mcp, oauth]
+    patterns:
+      - pattern: new $P({...})
+      - metavariable-regex:
+          metavariable: $P
+          regex: ^(ClientCredentialsProvider|PrivateKeyJwtProvider|StaticPrivateKeyJwtProvider|CrossAppAccessProvider)$
+      - pattern-not: "new $P({..., expectedIssuer: $X, ...})"
+      - pattern-not: new $P({..., expectedIssuer, ...})
+      - pattern-not: new $P({..., ...$SPREAD, ...})

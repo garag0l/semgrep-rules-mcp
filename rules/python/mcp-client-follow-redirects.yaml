@@ -1,0 +1,31 @@
+rules:
+  - id: mcp-py-client-follow-redirects
+    languages: [python]
+    severity: WARNING
+    message: >-
+      An httpx client with `follow_redirects=True` is handed to an MCP client transport. Cross-origin redirects
+      then re-send custom headers (API keys) and, on 307/308, request bodies to the redirect target. Leave
+      follow_redirects at False and point the client at the final URL.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      cwe: ["CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"]
+      references:
+        - https://github.com/advisories/GHSA-5h93-6whr-6q8j
+      technology: [mcp]
+    mode: taint
+    pattern-sources:
+      - pattern: httpx.AsyncClient(..., follow_redirects=True, ...)
+      - pattern: httpx.Client(..., follow_redirects=True, ...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $F(..., http_client=$X, ...)
+              - pattern: $F(..., httpx_client_factory=$X, ...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(.*\.)?(streamable_http_client|streamablehttp_client|sse_client|Client)$
+          - focus-metavariable: $X

@@ -1,0 +1,22 @@
+rules:
+  - id: mcp-experimental-task-store
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      The experimental `taskStore` is deprecated (replaced in the 2026-07-28 spec). In @modelcontextprotocol/sdk
+      1.24.0-1.31.x tasks were not tied to the session that created them, so clients sharing an InMemoryTaskStore
+      could list, read and cancel each other's tasks. Upgrade to >= 1.32.0 and preferably remove taskStore.
+    metadata:
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      cwe: ["CWE-639: Authorization Bypass Through User-Controlled Key"]
+      references:
+        - https://github.com/advisories/GHSA-22jm-h49p-29qw
+      technology: [mcp]
+    pattern-either:
+      - pattern: new InMemoryTaskStore(...)
+      - pattern: "new McpServer($INFO, {..., taskStore: $X, ...})"
+      - pattern: "new Server($INFO, {..., taskStore: $X, ...})"
