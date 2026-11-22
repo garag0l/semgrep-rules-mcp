@@ -33,7 +33,7 @@ install or the config URL yourself:
 
 ```yaml
 - uses: actions/checkout@v5
-- uses: garag0l/semgrep-rules-mcp@v0.1.0
+- uses: garag0l/semgrep-rules-mcp@v0.1.1
   with:
     path: .
     sarif-file: mcp.sarif

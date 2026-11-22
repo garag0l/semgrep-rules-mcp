@@ -4,6 +4,15 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-21
+
+### Added
+- Composite **GitHub Action** (`action.yml`): run the ruleset with
+  `uses: garag0l/semgrep-rules-mcp@v0.1.1`. Inputs: `path`, `sarif-file`,
+  `error-on-findings`, `semgrep-version`, `args`. Inputs are passed through env
+  vars to avoid Actions template injection, and an end-to-end CI job runs the
+  action against `examples/demo` and asserts the 5 known findings.
+
 ## [0.1.0] - 2026-11-21
 
 ### Added
