@@ -26,6 +26,27 @@ In CI (fails the job on findings, uploads SARIF to code scanning):
   with: { sarif_file: mcp.sarif }
 ```
 
+### GitHub Action
+
+The ruleset also ships as a composite action, so you don't manage the semgrep
+install or the config URL yourself:
+
+```yaml
+- uses: actions/checkout@v5
+- uses: garag0l/semgrep-rules-mcp@v0.1.0
+  with:
+    path: .
+    sarif-file: mcp.sarif
+    error-on-findings: "true"   # optional: fail the job on any finding
+- uses: github/codeql-action/upload-sarif@v4
+  if: always()
+  with: { sarif_file: mcp.sarif }
+```
+
+Inputs: `path` (default `.`), `sarif-file`, `error-on-findings` (default
+`false`), `semgrep-version` (pin the engine), and `args` (extra semgrep flags).
+Requires Python 3.9+ on the runner (GitHub-hosted runners have it).
+
 ## Why this exists
 
 MCP servers are the code path between an LLM and your systems, and they've collected their own bug classes:
