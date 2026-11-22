@@ -1,0 +1,65 @@
+name: "MCP Semgrep Rules"
+description: "Scan code for Model Context Protocol (MCP) server/client security issues — tool-argument shell injection, tool-description injection, and the SDK auth/transport settings 2026's advisories made mandatory — with the semgrep-rules-mcp ruleset."
+author: "Murat Bekgi"
+branding:
+  icon: "shield"
+  color: "red"
+
+inputs:
+  path:
+    description: "File or directory to scan."
+    required: false
+    default: "."
+  sarif-file:
+    description: "If set, write SARIF results here (upload it with github/codeql-action/upload-sarif)."
+    required: false
+    default: ""
+  semgrep-version:
+    description: "Version of the semgrep pip package to install (default: latest)."
+    required: false
+    default: ""
+  error-on-findings:
+    description: "Fail the step (exit non-zero) when any finding is reported."
+    required: false
+    default: "false"
+  args:
+    description: "Extra arguments appended to `semgrep scan` (advanced)."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install semgrep
+      shell: bash
+      env:
+        SEMGREP_VERSION: ${{ inputs.semgrep-version }}
+      run: |
+        set -euo pipefail
+        if [ -n "$SEMGREP_VERSION" ]; then
+          python3 -m pip install --quiet "semgrep==$SEMGREP_VERSION"
+        else
+          python3 -m pip install --quiet semgrep
+        fi
+    - name: Scan with the MCP ruleset
+      shell: bash
+      env:
+        SEMGREP_SEND_METRICS: "off"
+        ACTION_PATH: ${{ github.action_path }}
+        IN_PATH: ${{ inputs.path }}
+        IN_SARIF: ${{ inputs.sarif-file }}
+        IN_ERROR: ${{ inputs.error-on-findings }}
+        IN_ARGS: ${{ inputs.args }}
+      run: |
+        set -euo pipefail
+        opts=()
+        [ -n "$IN_SARIF" ] && opts+=(--sarif --output "$IN_SARIF")
+        [ "$IN_ERROR" = "true" ] && opts+=(--error)
+        # IN_ARGS is an intentional word-split escape hatch for extra flags.
+        # shellcheck disable=SC2086
+        semgrep scan \
+          --config "$ACTION_PATH/dist/mcp.yaml" \
+          --metrics off \
+          "${opts[@]}" \
+          $IN_ARGS \
+          "$IN_PATH"
