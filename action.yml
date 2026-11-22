@@ -58,7 +58,7 @@ runs:
         # IN_ARGS is an intentional word-split escape hatch for extra flags.
         # shellcheck disable=SC2086
         semgrep scan \
-          --config "$ACTION_PATH/dist/mcp.yaml" \
+          --config "$ACTION_PATH/rules" \
           --metrics off \
           "${opts[@]}" \
           $IN_ARGS \
